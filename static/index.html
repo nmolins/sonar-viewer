@@ -106,6 +106,46 @@ header h1 { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.02em; color:
 .fb:hover { color: var(--text); }
 .fb.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
+/* ── Light theme ── */
+.light {
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --surface2: #eef0f4;
+  --border: #dde0e6;
+  --border2: #c8ccd4;
+  --text: #2c3040;
+  --text-bright: #1a1e2e;
+  --muted: #6b7080;
+  --accent: #4a6aef;
+  --green: #2aad5a;
+  --amber: #d48a10;
+  --red: #d93c3c;
+  --teal: #1a8fc4;
+}
+.light .card { box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+.light .card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.1); }
+.light .pp.docker { background: rgba(26,143,196,.08); border-color: rgba(26,143,196,.2); }
+.light .pp.user   { background: rgba(212,138,16,.08); border-color: rgba(212,138,16,.2); }
+.light .pp.system { background: rgba(107,112,128,.08); border-color: rgba(107,112,128,.2); }
+
+/* ── Toggle switch ── */
+.toggle-wrap {
+  display: flex; align-items: center; gap: .5rem;
+}
+.toggle-label { font-family: var(--mono); font-size: .65rem; color: var(--muted); }
+.toggle {
+  position: relative; width: 32px; height: 18px;
+  background: var(--border2); border-radius: 9px;
+  cursor: pointer; transition: background .2s;
+}
+.toggle.on { background: var(--accent); }
+.toggle::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #fff; transition: transform .2s;
+}
+.toggle.on::after { transform: translateX(14px); }
+
 /* ── Categories & Grid ── */
 .categories { display: flex; flex-direction: column; gap: 2.5rem; }
 .cat-hd { display: flex; align-items: center; gap: .5rem; margin-bottom: .75rem; }
@@ -290,6 +330,14 @@ footer {
     <button class="fb" data-sort="cpu">CPU</button>
     <button class="fb" data-sort="ram">RAM</button>
   </div>
+  <div class="toggle-wrap">
+    <span class="toggle-label">Categories</span>
+    <div class="toggle on" id="toggle-cats"></div>
+  </div>
+  <div class="toggle-wrap">
+    <span class="toggle-label">Clair</span>
+    <div class="toggle" id="toggle-theme"></div>
+  </div>
 </div>
 
 <div id="error-zone"></div>
@@ -308,7 +356,8 @@ footer {
       <button class="modal-close" id="modal-close">&times;</button>
     </h2>
     <div class="modal-input-row">
-      <input type="number" class="modal-input" id="next-count" value="5" min="1" max="50" placeholder="Nombre de ports">
+      <input type="number" class="modal-input" id="next-from" placeholder="A partir du port (ex: 3000)" min="1" max="65535">
+      <input type="number" class="modal-input" id="next-count" value="5" min="1" max="50" placeholder="Nombre">
       <button class="btn primary" id="btn-find-next">Chercher</button>
     </div>
     <div id="next-ports-result" class="next-ports-list"></div>
@@ -322,6 +371,7 @@ let currentFilter = 'all';
 let currentSort = 'name';
 let searchQuery = '';
 let isLoading = false;
+let groupByCategory = true;
 
 // ── Categories ──
 const CATEGORIES = [
@@ -410,11 +460,13 @@ async function fetchSonar() {
   }
 }
 
-async function fetchNext(count) {
+async function fetchNext(count, fromPort) {
   const result = document.getElementById('next-ports-result');
   result.innerHTML = '<span style="color:var(--muted)">Recherche...</span>';
   try {
-    const res = await fetch('/api/next');
+    let url = '/api/next';
+    if (fromPort) url += `?from=${fromPort}`;
+    const res = await fetch(url);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
 
@@ -552,15 +604,21 @@ function render() {
   }
 
   let html = '';
-  for (const catKey of catOrder) {
-    const entries = groups[catKey];
-    if (!entries || entries.length === 0) continue;
-    const meta = getCatMeta(catKey);
-    html += `<div class="category">`;
-    html += `<div class="cat-hd"><span class="cat-icon">${meta.icon}</span><span class="cat-name">${catKey}</span><span class="cat-count">${entries.length}</span></div>`;
-    html += `<div class="grid">`;
-    for (const e of entries) html += renderCard(e);
-    html += '</div></div>';
+  if (groupByCategory) {
+    for (const catKey of catOrder) {
+      const entries = groups[catKey];
+      if (!entries || entries.length === 0) continue;
+      const meta = getCatMeta(catKey);
+      html += `<div class="category">`;
+      html += `<div class="cat-hd"><span class="cat-icon">${meta.icon}</span><span class="cat-name">${catKey}</span><span class="cat-count">${entries.length}</span></div>`;
+      html += `<div class="grid">`;
+      for (const e of entries) html += renderCard(e);
+      html += '</div></div>';
+    }
+  } else {
+    html += '<div class="grid">';
+    for (const e of sorted) html += renderCard(e);
+    html += '</div>';
   }
 
   grid.innerHTML = html;
@@ -617,7 +675,23 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('btn-find-next').addEventListener('click', () => {
     const count = parseInt(document.getElementById('next-count').value) || 5;
-    fetchNext(count);
+    const fromPort = document.getElementById('next-from').value.trim();
+    fetchNext(count, fromPort || null);
+  });
+
+  // Category toggle
+  const toggleCats = document.getElementById('toggle-cats');
+  toggleCats.addEventListener('click', () => {
+    groupByCategory = !groupByCategory;
+    toggleCats.classList.toggle('on', groupByCategory);
+    render();
+  });
+
+  // Theme toggle
+  const toggleTheme = document.getElementById('toggle-theme');
+  toggleTheme.addEventListener('click', () => {
+    document.body.classList.toggle('light');
+    toggleTheme.classList.toggle('on');
   });
 });
 </script>

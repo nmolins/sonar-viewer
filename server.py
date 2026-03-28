@@ -12,6 +12,7 @@ import subprocess
 import sys
 from functools import partial
 from http.server import HTTPServer, SimpleHTTPRequestHandler
+from urllib.parse import urlparse, parse_qs
 
 SONAR_CMD = os.environ.get("SONAR_CMD", "sonar")
 
@@ -20,10 +21,19 @@ class SonarHandler(SimpleHTTPRequestHandler):
     """Serves static files from static/ and exposes two API endpoints."""
 
     def do_GET(self):
-        if self.path == "/api/sonar":
+        parsed = urlparse(self.path)
+        if parsed.path == "/api/sonar":
             self._run_sonar("list", "--stats", "--json")
-        elif self.path == "/api/next":
-            self._run_sonar("next", "--json")
+        elif parsed.path == "/api/next":
+            params = parse_qs(parsed.query)
+            args = ["next"]
+            # sonar next [start_port] returns next available port after start_port
+            if "from" in params:
+                port_str = params["from"][0]
+                if port_str.isdigit():
+                    args.append(port_str)
+            args.append("--json")
+            self._run_sonar(*args)
         elif self.path == "/":
             self.path = "/index.html"
             super().do_GET()
