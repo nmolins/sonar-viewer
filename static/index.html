@@ -309,42 +309,35 @@ header h1 { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.02em; color:
 
 /* ── List view ── */
 .list-view { display: flex; flex-direction: column; gap: 2px; }
-.list-row {
-  display: grid;
-  grid-template-columns: 55px 2fr 1.5fr 55px 55px 70px 45px auto;
-  align-items: center; gap: .4rem;
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 6px; padding: .4rem .7rem;
-  text-decoration: none; color: var(--text);
-  font-family: var(--mono); font-size: .72rem;
-  transition: border-color .15s;
+.list-view table {
+  width: 100%; border-collapse: separate; border-spacing: 0 2px;
 }
-.list-row:hover { border-color: var(--border2); }
-.list-head {
-  display: grid;
-  grid-template-columns: 55px 2fr 1.5fr 55px 55px 70px 45px auto;
-  gap: .4rem; padding: .3rem .7rem;
+.list-view th {
   font-family: var(--mono); font-size: .6rem; font-weight: 600;
   color: var(--muted); text-transform: uppercase; letter-spacing: .08em;
+  padding: .3rem .5rem; text-align: left; white-space: nowrap;
 }
+.list-row {
+  background: var(--surface); transition: background .15s;
+}
+.list-row:hover { background: var(--surface2); }
+.list-row td {
+  padding: .45rem .5rem; font-family: var(--mono); font-size: .72rem;
+  white-space: nowrap; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+}
+.list-row td:first-child { border-left: 1px solid var(--border); border-radius: 6px 0 0 6px; }
+.list-row td:last-child { border-right: 1px solid var(--border); border-radius: 0 6px 6px 0; }
 .list-row .lr-name {
   font-family: var(--sans); font-weight: 600; font-size: .8rem;
   color: var(--text-bright);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   display: flex; align-items: center; gap: .4rem;
-  min-width: 0;
 }
-.list-row .lr-val { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .list-row .lr-val.green { color: var(--green); }
 .list-row .lr-val.amber { color: var(--amber); }
 .list-row .lr-val.red { color: var(--red); }
 
 @media (max-width: 900px) {
-  .list-row, .list-head {
-    grid-template-columns: 50px 2fr 50px 50px 60px auto;
-  }
-  .list-head .lh-image, .list-head .lh-conn,
-  .list-row .lr-image, .list-row .lr-conn { display: none; }
+  .lr-image, .lr-conn, .lh-image, .lh-conn { display: none; }
 }
 
 /* ── Log modal ── */
@@ -366,8 +359,8 @@ header h1 { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.02em; color:
 .log-lines { color: var(--muted); font-family: var(--mono); font-size: .62rem; }
 
 /* ── List view action buttons ── */
-.list-row .list-actions {
-  display: flex; gap: .3rem; justify-content: flex-end;
+.list-actions {
+  display: flex; gap: .3rem; justify-content: flex-end; white-space: nowrap;
 }
 .list-row .action-btn {
   font-family: var(--mono); font-size: .58rem; font-weight: 600;
@@ -867,25 +860,26 @@ function renderListRow(e) {
   }
   actions += '</span>';
 
-  return `<div class="list-row">` +
-    `<span class="pp ${e.type}">:${e.port}</span>` +
-    `<span class="lr-name"><span class="sd ${dotClass}"></span>${name}</span>` +
-    `<span class="lr-val lr-image">${img || getDescription(e) || e.process || portDescription(e.port) || '-'}</span>` +
-    `<span class="${cpuClass}">${cpuStr}</span>` +
-    `<span class="lr-val">${memStr}</span>` +
-    `<span class="lr-val">${e.uptime || '-'}</span>` +
-    `<span class="lr-val lr-conn">${conn}</span>` +
-    actions +
-    `</div>`;
+  return `<tr class="list-row">` +
+    `<td><span class="pp ${e.type}">:${e.port}</span></td>` +
+    `<td><span class="lr-name"><span class="sd ${dotClass}"></span>${name}</span></td>` +
+    `<td class="lr-image">${img || getDescription(e) || e.process || portDescription(e.port) || '-'}</td>` +
+    `<td class="${cpuClass}">${cpuStr}</td>` +
+    `<td>${memStr}</td>` +
+    `<td>${e.uptime || '-'}</td>` +
+    `<td class="lr-conn">${conn}</td>` +
+    `<td>${actions}</td>` +
+    `</tr>`;
 }
 
-const LIST_HEAD = '<div class="list-head">' +
-  '<span>Port</span><span>Nom</span><span class="lh-image">Image</span>' +
-  '<span>CPU</span><span>RAM</span><span>Uptime</span><span class="lh-conn">Conn</span><span></span></div>';
+const LIST_HEAD = '<thead><tr>' +
+  '<th>Port</th><th>Nom</th><th class="lh-image">Image</th>' +
+  '<th>CPU</th><th>RAM</th><th>Uptime</th><th class="lh-conn">Conn</th><th></th>' +
+  '</tr></thead>';
 
 function renderEntries(entries) {
   if (viewMode === 'list') {
-    return LIST_HEAD + '<div class="list-view">' + entries.map(renderListRow).join('') + '</div>';
+    return '<div class="list-view"><table>' + LIST_HEAD + '<tbody>' + entries.map(renderListRow).join('') + '</tbody></table></div>';
   }
   return '<div class="grid">' + entries.map(renderCard).join('') + '</div>';
 }
