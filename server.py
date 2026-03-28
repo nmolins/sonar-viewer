@@ -34,6 +34,16 @@ class SonarHandler(SimpleHTTPRequestHandler):
                     args.append(port_str)
             args.append("--json")
             self._run_sonar(*args)
+        elif parsed.path == "/api/logs":
+            params = parse_qs(parsed.query)
+            container = params.get("container", [None])[0]
+            if not container:
+                self._json_error(400, "Missing 'container' parameter")
+                return
+            tail = params.get("tail", ["200"])[0]
+            if not tail.isdigit():
+                tail = "200"
+            self._docker_logs(container, tail)
         elif self.path == "/":
             self.path = "/index.html"
             super().do_GET()
@@ -63,6 +73,26 @@ class SonarHandler(SimpleHTTPRequestHandler):
         except json.JSONDecodeError:
             # sonar returned non-JSON — pass it through anyway
             self._json_response(200, result.stdout.strip(), raw=True)
+        except Exception as e:
+            self._json_error(500, str(e))
+
+    def _docker_logs(self, container, tail):
+        import re
+        if not re.match(r'^[a-zA-Z0-9_.-]+$', container):
+            self._json_error(400, "Invalid container name")
+            return
+        cmd = ["docker", "logs", "--tail", tail, container]
+        try:
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=15
+            )
+            logs = result.stdout + result.stderr
+            body = json.dumps({"container": container, "logs": logs})
+            self._json_response(200, body, raw=True)
+        except FileNotFoundError:
+            self._json_error(500, "'docker' command not found")
+        except subprocess.TimeoutExpired:
+            self._json_error(504, "docker logs timed out (15s)")
         except Exception as e:
             self._json_error(500, str(e))
 

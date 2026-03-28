@@ -164,16 +164,29 @@ header h1 { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.02em; color:
 .card {
   background: var(--surface); border: 1px solid var(--border);
   border-radius: 10px; padding: .85rem 1rem;
-  text-decoration: none; color: var(--text);
+  color: var(--text);
   display: flex; flex-direction: column; gap: .5rem;
-  transition: border-color .15s, transform .1s, box-shadow .15s;
+  transition: border-color .15s, box-shadow .15s;
 }
 .card:hover {
-  border-color: var(--border2); transform: translateY(-1px);
+  border-color: var(--border2);
   box-shadow: 0 6px 24px rgba(0,0,0,.35);
 }
-.card.no-link { cursor: default; }
-.card.no-link:hover { transform: none; box-shadow: none; border-color: var(--border); }
+
+/* ── Card action buttons ── */
+.card-actions {
+  display: flex; gap: .4rem; margin-top: .2rem;
+}
+.card-actions .action-btn {
+  font-family: var(--mono); font-size: .62rem; font-weight: 600;
+  padding: 3px 10px; border-radius: 5px;
+  border: 1px solid var(--border2); background: var(--surface2);
+  color: var(--muted); cursor: pointer; transition: all .15s;
+  text-decoration: none; display: inline-flex; align-items: center; gap: 4px;
+}
+.card-actions .action-btn:hover { color: var(--text); border-color: var(--accent); }
+.card-actions .action-btn.open-btn:hover { color: var(--accent); }
+.card-actions .action-btn.log-btn:hover { color: var(--teal); border-color: var(--teal); }
 
 .ct { display: flex; align-items: center; gap: .6rem; }
 .pp {
@@ -298,7 +311,7 @@ header h1 { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.02em; color:
 .list-view { display: flex; flex-direction: column; gap: 2px; }
 .list-row {
   display: grid;
-  grid-template-columns: 70px 1fr 120px 70px 70px 80px 70px;
+  grid-template-columns: 70px 1fr 120px 70px 70px 80px 70px auto;
   align-items: center; gap: .5rem;
   background: var(--surface); border: 1px solid var(--border);
   border-radius: 6px; padding: .5rem .8rem;
@@ -311,7 +324,7 @@ header h1 { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.02em; color:
 .list-row.no-link:hover { border-color: var(--border); }
 .list-head {
   display: grid;
-  grid-template-columns: 70px 1fr 120px 70px 70px 80px 70px;
+  grid-template-columns: 70px 1fr 120px 70px 70px 80px 70px auto;
   gap: .5rem; padding: .3rem .8rem;
   font-family: var(--mono); font-size: .6rem; font-weight: 600;
   color: var(--muted); text-transform: uppercase; letter-spacing: .08em;
@@ -329,11 +342,44 @@ header h1 { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.02em; color:
 
 @media (max-width: 900px) {
   .list-row, .list-head {
-    grid-template-columns: 60px 1fr 60px 60px 70px;
+    grid-template-columns: 60px 1fr 60px 60px 70px auto;
   }
   .list-head .lh-image, .list-head .lh-conn,
   .list-row .lr-image, .list-row .lr-conn { display: none; }
 }
+
+/* ── Log modal ── */
+.log-modal {
+  max-width: 800px; width: 95%;
+}
+.log-modal h2 { font-size: .9rem; }
+.log-content {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 1rem;
+  font-family: var(--mono); font-size: .68rem; line-height: 1.5;
+  color: var(--text); max-height: 60vh; overflow: auto;
+  white-space: pre-wrap; word-break: break-all;
+}
+.log-toolbar {
+  display: flex; gap: .5rem; margin-bottom: .75rem; align-items: center;
+}
+.log-toolbar .btn { font-size: .65rem; }
+.log-lines { color: var(--muted); font-family: var(--mono); font-size: .62rem; }
+
+/* ── List view action buttons ── */
+.list-row .list-actions {
+  display: flex; gap: .3rem; justify-content: flex-end;
+}
+.list-row .action-btn {
+  font-family: var(--mono); font-size: .58rem; font-weight: 600;
+  padding: 2px 7px; border-radius: 4px;
+  border: 1px solid var(--border2); background: var(--surface2);
+  color: var(--muted); cursor: pointer; transition: all .15s;
+  text-decoration: none; display: inline-flex; align-items: center; gap: 3px;
+}
+.list-row .action-btn:hover { color: var(--text); border-color: var(--accent); }
+.list-row .action-btn.open-btn:hover { color: var(--accent); }
+.list-row .action-btn.log-btn:hover { color: var(--teal); border-color: var(--teal); }
 
 /* ── Footer ── */
 footer {
@@ -433,6 +479,28 @@ footer {
       <button class="btn primary" id="btn-find-next">Chercher</button>
     </div>
     <div id="next-ports-result" class="next-ports-list"></div>
+  </div>
+</div>
+
+<!-- Logs Modal -->
+<div class="modal-overlay" id="logs-overlay">
+  <div class="modal log-modal">
+    <h2>
+      <span id="logs-title">Logs</span>
+      <button class="modal-close" id="logs-close">&times;</button>
+    </h2>
+    <div class="log-toolbar">
+      <button class="btn" id="logs-refresh">Refresh</button>
+      <select class="modal-input" id="logs-tail" style="flex:0;width:auto;padding:4px 8px;font-size:.7rem">
+        <option value="50">50 lignes</option>
+        <option value="200" selected>200 lignes</option>
+        <option value="500">500 lignes</option>
+        <option value="1000">1000 lignes</option>
+      </select>
+      <span class="log-lines" id="logs-count"></span>
+    </div>
+    <div class="log-content" id="logs-content">
+    </div>
   </div>
 </div>
 
@@ -622,12 +690,7 @@ function renderCard(e) {
   if (e.state === 'running') dotClass = 'running';
   else if (e.state === 'stopped') dotClass = 'stopped';
 
-  const isLink = e.type === 'docker' || e.type === 'user';
-  const tag = isLink ? 'a' : 'div';
-  const linkAttr = isLink && e.url ? ` href="${e.url}" target="_blank"` : '';
-  const noLink = isLink ? '' : ' no-link';
-
-  let html = `<${tag} class="card${noLink}"${linkAttr} data-type="${e.type}">`;
+  let html = `<div class="card" data-type="${e.type}">`;
   html += `<div class="ct"><span class="pp ${e.type}">:${e.port}</span><span class="cn" title="${name}">${name}</span><span class="sd ${dotClass}"></span></div>`;
   if (img) html += `<div class="ci">${img}</div>`;
   if (cpuStr) html += `<div class="cbw"><div class="cb ${barClass}" style="width:${barWidth}%"></div></div>`;
@@ -641,7 +704,14 @@ function renderCard(e) {
     const connClass = conn > 0 ? 'conn-badge active' : 'conn-badge';
     html += `<div class="cf"><span class="ut">${e.uptime || ''}</span><span class="${connClass}">${conn} conn</span></div>`;
   }
-  html += `</${tag}>`;
+  // Action buttons
+  html += '<div class="card-actions">';
+  if (e.url) html += `<a class="action-btn open-btn" href="${e.url}" target="_blank" onclick="event.stopPropagation()">Open</a>`;
+  if (e.type === 'docker' && e.docker_container) {
+    html += `<button class="action-btn log-btn" onclick="openLogs('${e.docker_container.replace(/'/g, "\\'")}')">Log</button>`;
+  }
+  html += '</div>';
+  html += '</div>';
   return html;
 }
 
@@ -662,12 +732,14 @@ function renderListRow(e) {
   if (e.state === 'running') dotClass = 'running';
   else if (e.state === 'stopped') dotClass = 'stopped';
 
-  const isLink = e.type === 'docker' || e.type === 'user';
-  const tag = isLink ? 'a' : 'div';
-  const linkAttr = isLink && e.url ? ` href="${e.url}" target="_blank"` : '';
-  const noLink = isLink ? '' : ' no-link';
+  let actions = '<span class="list-actions">';
+  if (e.url) actions += `<a class="action-btn open-btn" href="${e.url}" target="_blank" onclick="event.stopPropagation()">Open</a>`;
+  if (e.type === 'docker' && e.docker_container) {
+    actions += `<button class="action-btn log-btn" onclick="openLogs('${e.docker_container.replace(/'/g, "\\'")}')">Log</button>`;
+  }
+  actions += '</span>';
 
-  return `<${tag} class="list-row${noLink}"${linkAttr}>` +
+  return `<div class="list-row">` +
     `<span class="pp ${e.type}">:${e.port}</span>` +
     `<span class="lr-name"><span class="sd ${dotClass}"></span>${name}</span>` +
     `<span class="lr-val lr-image">${img || '-'}</span>` +
@@ -675,12 +747,13 @@ function renderListRow(e) {
     `<span class="lr-val">${memStr}</span>` +
     `<span class="lr-val">${e.uptime || '-'}</span>` +
     `<span class="lr-val lr-conn">${conn}</span>` +
-    `</${tag}>`;
+    actions +
+    `</div>`;
 }
 
 const LIST_HEAD = '<div class="list-head">' +
   '<span>Port</span><span>Nom</span><span class="lh-image">Image</span>' +
-  '<span>CPU</span><span>RAM</span><span>Uptime</span><span class="lh-conn">Conn</span></div>';
+  '<span>CPU</span><span>RAM</span><span>Uptime</span><span class="lh-conn">Conn</span><span></span></div>';
 
 function renderEntries(entries) {
   if (viewMode === 'list') {
@@ -737,6 +810,37 @@ function render() {
 
   grid.innerHTML = html;
   updateStats();
+}
+
+// ── Logs ──
+let currentLogContainer = null;
+
+function openLogs(container) {
+  currentLogContainer = container;
+  document.getElementById('logs-title').textContent = `Logs — ${container}`;
+  document.getElementById('logs-content').textContent = 'Chargement...';
+  document.getElementById('logs-count').textContent = '';
+  document.getElementById('logs-overlay').classList.add('visible');
+  fetchLogs();
+}
+
+async function fetchLogs() {
+  if (!currentLogContainer) return;
+  const tail = document.getElementById('logs-tail').value;
+  const content = document.getElementById('logs-content');
+  content.textContent = 'Chargement...';
+  try {
+    const res = await fetch(`/api/logs?container=${encodeURIComponent(currentLogContainer)}&tail=${tail}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    content.textContent = data.logs || '(vide)';
+    const lines = (data.logs || '').split('\n').filter(l => l).length;
+    document.getElementById('logs-count').textContent = `${lines} lignes`;
+    // Scroll to bottom
+    content.scrollTop = content.scrollHeight;
+  } catch (err) {
+    content.textContent = `Erreur: ${err.message}`;
+  }
 }
 
 // ── Events ──
@@ -807,6 +911,21 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('icon-sun').style.display = isLight ? 'none' : 'block';
     document.getElementById('icon-moon').style.display = isLight ? 'block' : 'none';
   });
+
+  // Logs modal
+  const logsOverlay = document.getElementById('logs-overlay');
+  document.getElementById('logs-close').addEventListener('click', () => {
+    logsOverlay.classList.remove('visible');
+    currentLogContainer = null;
+  });
+  logsOverlay.addEventListener('click', (e) => {
+    if (e.target === logsOverlay) {
+      logsOverlay.classList.remove('visible');
+      currentLogContainer = null;
+    }
+  });
+  document.getElementById('logs-refresh').addEventListener('click', fetchLogs);
+  document.getElementById('logs-tail').addEventListener('change', fetchLogs);
 
   // View mode toggle (cards/list)
   document.getElementById('view-cards').addEventListener('click', () => {
