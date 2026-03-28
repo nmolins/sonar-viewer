@@ -556,6 +556,7 @@ function getCatMeta(key) {
 
 // ── Well-known ports ──
 const KNOWN_PORTS = {
+  // Standard
   20: 'FTP (data)', 21: 'FTP', 22: 'SSH', 23: 'Telnet', 25: 'SMTP',
   53: 'DNS', 67: 'DHCP', 68: 'DHCP', 69: 'TFTP', 80: 'HTTP',
   110: 'POP3', 119: 'NNTP', 123: 'NTP', 135: 'RPC', 137: 'NetBIOS',
@@ -565,10 +566,35 @@ const KNOWN_PORTS = {
   1080: 'SOCKS', 1433: 'MSSQL', 1434: 'MSSQL Browser',
   1521: 'Oracle DB', 1883: 'MQTT', 2049: 'NFS',
   3306: 'MySQL', 3389: 'RDP', 5432: 'PostgreSQL',
-  5672: 'AMQP', 5900: 'VNC', 6379: 'Redis', 6443: 'Kubernetes API',
-  8443: 'HTTPS (alt)', 8883: 'MQTT (TLS)',
+  5353: 'mDNS', 5672: 'AMQP', 5900: 'VNC', 6379: 'Redis',
+  6443: 'Kubernetes API', 8443: 'HTTPS (alt)', 8883: 'MQTT (TLS)',
   9090: 'Prometheus', 9200: 'Elasticsearch', 9300: 'Elasticsearch',
-  11211: 'Memcached', 27017: 'MongoDB', 5353: 'mDNS',
+  11211: 'Memcached', 27017: 'MongoDB',
+  // Homelab / Media
+  2283: 'Immich', 3579: 'Ombi', 5055: 'Jellyseerr/Overseerr',
+  7878: 'Radarr', 8096: 'Jellyfin', 8097: 'Jellyfin (HTTPS)',
+  8920: 'Jellyfin (HTTPS)', 8989: 'Sonarr', 6767: 'Bazarr',
+  8686: 'Lidarr', 8787: 'Readarr', 9696: 'Prowlarr',
+  32400: 'Plex', 32469: 'Plex DLNA',
+  8324: 'Plex Companion', 13378: 'Audiobookshelf',
+  // Homelab / Download
+  6881: 'BitTorrent', 8080: 'HTTP (alt)', 8085: 'qBittorrent',
+  9091: 'Transmission', 8112: 'Deluge', 51413: 'Transmission (peer)',
+  // Homelab / Infra
+  3100: 'Loki', 8081: 'HTTP (alt)', 9000: 'Portainer',
+  9443: 'Portainer (HTTPS)', 3001: 'Uptime Kuma / Homepage',
+  8088: 'Various (HASS/Syncthing)', 19999: 'Netdata',
+  // Homelab / Network
+  81: 'Nginx Proxy Manager', 8181: 'Traefik Dashboard',
+  51820: 'WireGuard', 51821: 'wg-easy UI',
+  // Homelab / Automation
+  1880: 'Node-RED', 5678: 'n8n', 8123: 'Home Assistant',
+  // Homelab / Security
+  8222: 'Vaultwarden', 8843: 'UniFi Portal',
+  // Homelab / Docs & Productivity
+  8000: 'Paperless-ngx', 3456: 'Vikunja',
+  // Homelab / Files
+  8384: 'Syncthing', 22000: 'Syncthing (transfer)',
 };
 
 function portDescription(port) {
