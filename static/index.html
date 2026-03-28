@@ -309,23 +309,22 @@ header h1 { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.02em; color:
 
 /* ── List view ── */
 .list-view { display: flex; flex-direction: column; gap: 2px; }
+.list-view { max-width: 1000px; }
 .list-row {
   display: grid;
-  grid-template-columns: 70px 1fr 120px 70px 70px 80px 70px auto;
-  align-items: center; gap: .5rem;
+  grid-template-columns: 55px minmax(100px, 200px) 110px 55px 55px 70px 45px auto;
+  align-items: center; gap: .4rem;
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: 6px; padding: .5rem .8rem;
+  border-radius: 6px; padding: .4rem .7rem;
   text-decoration: none; color: var(--text);
   font-family: var(--mono); font-size: .72rem;
   transition: border-color .15s;
 }
 .list-row:hover { border-color: var(--border2); }
-.list-row.no-link { cursor: default; }
-.list-row.no-link:hover { border-color: var(--border); }
 .list-head {
   display: grid;
-  grid-template-columns: 70px 1fr 120px 70px 70px 80px 70px auto;
-  gap: .5rem; padding: .3rem .8rem;
+  grid-template-columns: 55px minmax(100px, 200px) 110px 55px 55px 70px 45px auto;
+  gap: .4rem; padding: .3rem .7rem; max-width: 1000px;
   font-family: var(--mono); font-size: .6rem; font-weight: 600;
   color: var(--muted); text-transform: uppercase; letter-spacing: .08em;
 }
@@ -342,7 +341,7 @@ header h1 { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.02em; color:
 
 @media (max-width: 900px) {
   .list-row, .list-head {
-    grid-template-columns: 60px 1fr 60px 60px 70px auto;
+    grid-template-columns: 50px minmax(80px, 160px) 50px 50px 60px auto;
   }
   .list-head .lh-image, .list-head .lh-conn,
   .list-row .lr-image, .list-row .lr-conn { display: none; }
