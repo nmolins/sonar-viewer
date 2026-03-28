@@ -554,6 +554,27 @@ function getCatMeta(key) {
   return { key: 'Other', icon: '\u2753', patterns: [] };
 }
 
+// ── Well-known ports ──
+const KNOWN_PORTS = {
+  20: 'FTP (data)', 21: 'FTP', 22: 'SSH', 23: 'Telnet', 25: 'SMTP',
+  53: 'DNS', 67: 'DHCP', 68: 'DHCP', 69: 'TFTP', 80: 'HTTP',
+  110: 'POP3', 119: 'NNTP', 123: 'NTP', 135: 'RPC', 137: 'NetBIOS',
+  138: 'NetBIOS', 139: 'NetBIOS', 143: 'IMAP', 161: 'SNMP', 162: 'SNMP Trap',
+  389: 'LDAP', 443: 'HTTPS', 445: 'SMB', 465: 'SMTPS', 514: 'Syslog',
+  587: 'SMTP (submission)', 636: 'LDAPS', 993: 'IMAPS', 995: 'POP3S',
+  1080: 'SOCKS', 1433: 'MSSQL', 1434: 'MSSQL Browser',
+  1521: 'Oracle DB', 1883: 'MQTT', 2049: 'NFS',
+  3306: 'MySQL', 3389: 'RDP', 5432: 'PostgreSQL',
+  5672: 'AMQP', 5900: 'VNC', 6379: 'Redis', 6443: 'Kubernetes API',
+  8443: 'HTTPS (alt)', 8883: 'MQTT (TLS)',
+  9090: 'Prometheus', 9200: 'Elasticsearch', 9300: 'Elasticsearch',
+  11211: 'Memcached', 27017: 'MongoDB', 5353: 'mDNS',
+};
+
+function portDescription(port) {
+  return KNOWN_PORTS[port] || '';
+}
+
 // ── Helpers ──
 function fmtBytes(b) {
   if (!b || b === 0) return '';
@@ -687,7 +708,9 @@ function renderCard(e) {
 
   let html = `<div class="card" data-type="${e.type}">`;
   html += `<div class="ct"><span class="pp ${e.type}">:${e.port}</span><span class="cn" title="${name}">${name}</span><span class="sd ${dotClass}"></span></div>`;
-  if (img) html += `<div class="ci">${img}</div>`;
+  const desc = portDescription(e.port);
+  if (img) html += `<div class="ci">${img}${desc ? ' \u00B7 ' + desc : ''}</div>`;
+  else if (desc) html += `<div class="ci">${desc}</div>`;
   if (cpuStr) html += `<div class="cbw"><div class="cb ${barClass}" style="width:${barWidth}%"></div></div>`;
   if (cpuStr || memStr) {
     html += '<div class="cstats">';
@@ -737,7 +760,7 @@ function renderListRow(e) {
   return `<div class="list-row">` +
     `<span class="pp ${e.type}">:${e.port}</span>` +
     `<span class="lr-name"><span class="sd ${dotClass}"></span>${name}</span>` +
-    `<span class="lr-val lr-image">${img || '-'}</span>` +
+    `<span class="lr-val lr-image">${img || portDescription(e.port) || '-'}</span>` +
     `<span class="${cpuClass}">${cpuStr}</span>` +
     `<span class="lr-val">${memStr}</span>` +
     `<span class="lr-val">${e.uptime || '-'}</span>` +
