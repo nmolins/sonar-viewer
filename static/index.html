@@ -475,7 +475,6 @@ footer {
     </h2>
     <div class="modal-input-row">
       <input type="number" class="modal-input" id="next-from" placeholder="A partir du port (ex: 3000)" min="1" max="65535">
-      <input type="number" class="modal-input" id="next-count" value="5" min="1" max="50" placeholder="Nombre">
       <button class="btn primary" id="btn-find-next">Chercher</button>
     </div>
     <div id="next-ports-result" class="next-ports-list"></div>
@@ -601,7 +600,7 @@ async function fetchSonar() {
   }
 }
 
-async function fetchNext(count, fromPort) {
+async function fetchNext(fromPort) {
   const result = document.getElementById('next-ports-result');
   result.innerHTML = '<span style="color:var(--muted)">Recherche...</span>';
   try {
@@ -615,9 +614,6 @@ async function fetchNext(count, fromPort) {
     if (Array.isArray(data.ports)) ports = data.ports;
     else if (Array.isArray(data)) ports = data;
     else if (data.port) ports = [data.port];
-
-    // If we got ports, show up to `count`
-    ports = ports.slice(0, count);
 
     if (ports.length === 0) {
       result.innerHTML = '<span style="color:var(--muted)">Aucun port disponible trouv\u00E9</span>';
@@ -892,9 +888,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target === overlay) overlay.classList.remove('visible');
   });
   document.getElementById('btn-find-next').addEventListener('click', () => {
-    const count = parseInt(document.getElementById('next-count').value) || 5;
     const fromPort = document.getElementById('next-from').value.trim();
-    fetchNext(count, fromPort || null);
+    fetchNext(fromPort || null);
   });
 
   // Category toggle
