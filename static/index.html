@@ -122,8 +122,10 @@ header h1 { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.02em; color:
   --red: #d93c3c;
   --teal: #1a8fc4;
 }
+.light header h1 { color: var(--text-bright); }
 .light .card { box-shadow: 0 1px 3px rgba(0,0,0,.06); }
 .light .card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.1); }
+.light .modal { box-shadow: 0 8px 32px rgba(0,0,0,.15); }
 .light .pp.docker { background: rgba(26,143,196,.08); border-color: rgba(26,143,196,.2); }
 .light .pp.user   { background: rgba(212,138,16,.08); border-color: rgba(212,138,16,.2); }
 .light .pp.system { background: rgba(107,112,128,.08); border-color: rgba(107,112,128,.2); }
@@ -271,6 +273,68 @@ header h1 { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.02em; color:
   font-family: var(--mono); font-size: .85rem;
 }
 
+/* ── Theme toggle icon ── */
+.icon-btn {
+  background: none; border: 1px solid var(--border2); border-radius: 6px;
+  color: var(--muted); cursor: pointer; padding: 4px 6px;
+  display: flex; align-items: center; transition: all .15s;
+}
+.icon-btn:hover { color: var(--text); border-color: var(--accent); }
+.icon-btn svg { display: block; }
+
+/* ── View mode toggle ── */
+.view-btns { display: flex; gap: 0; }
+.view-btn {
+  background: var(--surface); border: 1px solid var(--border2);
+  color: var(--muted); cursor: pointer; padding: 4px 8px;
+  display: flex; align-items: center; transition: all .15s;
+}
+.view-btn:first-child { border-radius: 6px 0 0 6px; }
+.view-btn:last-child { border-radius: 0 6px 6px 0; border-left: none; }
+.view-btn:hover { color: var(--text); }
+.view-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* ── List view ── */
+.list-view { display: flex; flex-direction: column; gap: 2px; }
+.list-row {
+  display: grid;
+  grid-template-columns: 70px 1fr 120px 70px 70px 80px 70px;
+  align-items: center; gap: .5rem;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: .5rem .8rem;
+  text-decoration: none; color: var(--text);
+  font-family: var(--mono); font-size: .72rem;
+  transition: border-color .15s;
+}
+.list-row:hover { border-color: var(--border2); }
+.list-row.no-link { cursor: default; }
+.list-row.no-link:hover { border-color: var(--border); }
+.list-head {
+  display: grid;
+  grid-template-columns: 70px 1fr 120px 70px 70px 80px 70px;
+  gap: .5rem; padding: .3rem .8rem;
+  font-family: var(--mono); font-size: .6rem; font-weight: 600;
+  color: var(--muted); text-transform: uppercase; letter-spacing: .08em;
+}
+.list-row .lr-name {
+  font-family: var(--sans); font-weight: 600; font-size: .8rem;
+  color: var(--text-bright);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  display: flex; align-items: center; gap: .4rem;
+}
+.list-row .lr-val { white-space: nowrap; }
+.list-row .lr-val.green { color: var(--green); }
+.list-row .lr-val.amber { color: var(--amber); }
+.list-row .lr-val.red { color: var(--red); }
+
+@media (max-width: 900px) {
+  .list-row, .list-head {
+    grid-template-columns: 60px 1fr 60px 60px 70px;
+  }
+  .list-head .lh-image, .list-head .lh-conn,
+  .list-row .lr-image, .list-row .lr-conn { display: none; }
+}
+
 /* ── Footer ── */
 footer {
   margin-top: 4rem; padding-top: 1.5rem;
@@ -303,6 +367,10 @@ footer {
       <div class="hs user"><span id="s-host">-</span>host</div>
     </div>
     <div class="header-actions">
+      <button class="icon-btn" id="btn-theme" title="Changer le theme">
+        <svg id="icon-sun" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        <svg id="icon-moon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
       <button class="btn" id="btn-next">Ports dispo</button>
       <button class="btn primary" id="btn-refresh">
         <svg id="refresh-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
@@ -334,9 +402,13 @@ footer {
     <span class="toggle-label">Categories</span>
     <div class="toggle on" id="toggle-cats"></div>
   </div>
-  <div class="toggle-wrap">
-    <span class="toggle-label">Clair</span>
-    <div class="toggle" id="toggle-theme"></div>
+  <div class="view-btns">
+    <button class="view-btn active" id="view-cards" title="Cards">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    </button>
+    <button class="view-btn" id="view-list" title="Liste">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+    </button>
   </div>
 </div>
 
@@ -372,6 +444,7 @@ let currentSort = 'name';
 let searchQuery = '';
 let isLoading = false;
 let groupByCategory = true;
+let viewMode = 'cards'; // 'cards' | 'list'
 
 // ── Categories ──
 const CATEGORIES = [
@@ -572,6 +645,50 @@ function renderCard(e) {
   return html;
 }
 
+function renderListRow(e) {
+  const name = displayName(e);
+  const img = shortImage(e.docker_image);
+  const cpu = e.cpu_percent || 0;
+  const mem = e.memory_rss_bytes || 0;
+  const cpuStr = cpu > 0 ? cpu.toFixed(1) + '%' : '-';
+  const memStr = fmtBytes(mem) || '-';
+  const conn = e.connections || 0;
+
+  let cpuClass = 'lr-val';
+  if (cpu > 5) cpuClass += ' amber';
+  if (cpu > 15) cpuClass += ' red';
+
+  let dotClass = 'none';
+  if (e.state === 'running') dotClass = 'running';
+  else if (e.state === 'stopped') dotClass = 'stopped';
+
+  const isLink = e.type === 'docker' || e.type === 'user';
+  const tag = isLink ? 'a' : 'div';
+  const linkAttr = isLink && e.url ? ` href="${e.url}" target="_blank"` : '';
+  const noLink = isLink ? '' : ' no-link';
+
+  return `<${tag} class="list-row${noLink}"${linkAttr}>` +
+    `<span class="pp ${e.type}">:${e.port}</span>` +
+    `<span class="lr-name"><span class="sd ${dotClass}"></span>${name}</span>` +
+    `<span class="lr-val lr-image">${img || '-'}</span>` +
+    `<span class="${cpuClass}">${cpuStr}</span>` +
+    `<span class="lr-val">${memStr}</span>` +
+    `<span class="lr-val">${e.uptime || '-'}</span>` +
+    `<span class="lr-val lr-conn">${conn}</span>` +
+    `</${tag}>`;
+}
+
+const LIST_HEAD = '<div class="list-head">' +
+  '<span>Port</span><span>Nom</span><span class="lh-image">Image</span>' +
+  '<span>CPU</span><span>RAM</span><span>Uptime</span><span class="lh-conn">Conn</span></div>';
+
+function renderEntries(entries) {
+  if (viewMode === 'list') {
+    return LIST_HEAD + '<div class="list-view">' + entries.map(renderListRow).join('') + '</div>';
+  }
+  return '<div class="grid">' + entries.map(renderCard).join('') + '</div>';
+}
+
 function render() {
   const filtered = allPorts.filter(passesFilters);
   const sorted = sortEntries(filtered);
@@ -611,14 +728,11 @@ function render() {
       const meta = getCatMeta(catKey);
       html += `<div class="category">`;
       html += `<div class="cat-hd"><span class="cat-icon">${meta.icon}</span><span class="cat-name">${catKey}</span><span class="cat-count">${entries.length}</span></div>`;
-      html += `<div class="grid">`;
-      for (const e of entries) html += renderCard(e);
-      html += '</div></div>';
+      html += renderEntries(entries);
+      html += '</div>';
     }
   } else {
-    html += '<div class="grid">';
-    for (const e of sorted) html += renderCard(e);
-    html += '</div>';
+    html += renderEntries(sorted);
   }
 
   grid.innerHTML = html;
@@ -687,11 +801,25 @@ document.addEventListener('DOMContentLoaded', () => {
     render();
   });
 
-  // Theme toggle
-  const toggleTheme = document.getElementById('toggle-theme');
-  toggleTheme.addEventListener('click', () => {
-    document.body.classList.toggle('light');
-    toggleTheme.classList.toggle('on');
+  // Theme toggle (sun/moon icon)
+  document.getElementById('btn-theme').addEventListener('click', () => {
+    const isLight = document.body.classList.toggle('light');
+    document.getElementById('icon-sun').style.display = isLight ? 'none' : 'block';
+    document.getElementById('icon-moon').style.display = isLight ? 'block' : 'none';
+  });
+
+  // View mode toggle (cards/list)
+  document.getElementById('view-cards').addEventListener('click', () => {
+    viewMode = 'cards';
+    document.getElementById('view-cards').classList.add('active');
+    document.getElementById('view-list').classList.remove('active');
+    render();
+  });
+  document.getElementById('view-list').addEventListener('click', () => {
+    viewMode = 'list';
+    document.getElementById('view-list').classList.add('active');
+    document.getElementById('view-cards').classList.remove('active');
+    render();
   });
 });
 </script>
