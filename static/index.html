@@ -863,7 +863,7 @@ function renderListRow(e) {
   return `<tr class="list-row">` +
     `<td><span class="pp ${e.type}">:${e.port}</span></td>` +
     `<td><span class="lr-name"><span class="sd ${dotClass}"></span>${name}</span></td>` +
-    `<td class="lr-image">${img || getDescription(e) || e.process || portDescription(e.port) || '-'}</td>` +
+    `<td class="lr-image">${[img, getDescription(e) || portDescription(e.port) || e.process].filter(Boolean).join(' \u00B7 ') || '-'}</td>` +
     `<td class="${cpuClass}">${cpuStr}</td>` +
     `<td>${memStr}</td>` +
     `<td>${e.uptime || '-'}</td>` +
