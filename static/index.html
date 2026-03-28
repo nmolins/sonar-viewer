@@ -380,6 +380,30 @@ header h1 { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.02em; color:
 .list-row .action-btn.open-btn:hover { color: var(--accent); }
 .list-row .action-btn.log-btn:hover { color: var(--teal); border-color: var(--teal); }
 
+/* ── Edit modal ── */
+.edit-modal { max-width: 420px; }
+.edit-modal h2 { font-size: .9rem; margin-bottom: .75rem; }
+.edit-field { margin-bottom: .75rem; }
+.edit-field label {
+  display: block; font-family: var(--mono); font-size: .62rem;
+  color: var(--muted); margin-bottom: .25rem; text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.edit-field input, .edit-field select {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 8px; padding: .5rem .75rem;
+  color: var(--text); font-family: var(--mono); font-size: .8rem; outline: none;
+}
+.edit-field input:focus, .edit-field select:focus { border-color: var(--accent); }
+.edit-actions { display: flex; gap: .5rem; justify-content: flex-end; margin-top: 1rem; }
+.edit-actions .btn.danger { color: var(--red); border-color: rgba(240,82,82,.3); }
+.edit-actions .btn.danger:hover { background: rgba(240,82,82,.1); }
+.edit-saved {
+  font-family: var(--mono); font-size: .65rem; color: var(--green);
+  opacity: 0; transition: opacity .3s; align-self: center;
+}
+.edit-saved.show { opacity: 1; }
+
 /* ── Footer ── */
 footer {
   margin-top: 4rem; padding-top: 1.5rem;
@@ -502,6 +526,35 @@ footer {
   </div>
 </div>
 
+<!-- Edit Modal -->
+<div class="modal-overlay" id="edit-overlay">
+  <div class="modal edit-modal">
+    <h2>
+      <span id="edit-title">Modifier</span>
+      <button class="modal-close" id="edit-close">&times;</button>
+    </h2>
+    <div class="edit-field">
+      <label>Nom personnalise</label>
+      <input type="text" id="edit-name" placeholder="Laisser vide pour le nom par defaut">
+    </div>
+    <div class="edit-field">
+      <label>Description</label>
+      <input type="text" id="edit-desc" placeholder="Ex: API interne, service de backup...">
+    </div>
+    <div class="edit-field">
+      <label>Categorie</label>
+      <select id="edit-cat">
+        <option value="">Auto (par defaut)</option>
+      </select>
+    </div>
+    <div class="edit-actions">
+      <button class="btn danger" id="edit-reset">Reset</button>
+      <span class="edit-saved" id="edit-saved">Sauvegarde !</span>
+      <button class="btn primary" id="edit-save">Sauvegarder</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── State ──
 let allPorts = [];
@@ -511,6 +564,7 @@ let searchQuery = '';
 let isLoading = false;
 let groupByCategory = true;
 let viewMode = 'cards'; // 'cards' | 'list'
+let config = { overrides: {} };
 
 // ── Categories ──
 const CATEGORIES = [
@@ -530,6 +584,9 @@ const CATEGORIES = [
 ];
 
 function categorize(entry) {
+  const ov = config.overrides[String(entry.port)];
+  if (ov && ov.category) return ov.category;
+
   const haystack = [
     entry.docker_image || '',
     entry.docker_container || '',
@@ -610,9 +667,16 @@ function fmtBytes(b) {
 }
 
 function displayName(e) {
+  const ov = config.overrides[String(e.port)];
+  if (ov && ov.name) return ov.name;
   if (e.docker_container) return e.docker_container;
   if (e.process) return e.process.replace(/\(.*/, '').trim();
   return 'Port ' + e.port;
+}
+
+function getDescription(e) {
+  const ov = config.overrides[String(e.port)];
+  return (ov && ov.description) || '';
 }
 
 function shortImage(img) {
@@ -621,6 +685,14 @@ function shortImage(img) {
 }
 
 // ── API ──
+async function loadConfig() {
+  try {
+    const res = await fetch('/api/config');
+    const data = await res.json();
+    if (!data.error) config = data;
+  } catch (e) { /* ignore */ }
+}
+
 async function fetchSonar() {
   if (isLoading) return;
   isLoading = true;
@@ -628,6 +700,7 @@ async function fetchSonar() {
   document.getElementById('error-zone').innerHTML = '';
 
   try {
+    await loadConfig();
     const res = await fetch('/api/sonar');
     const data = await res.json();
     if (data.error) throw new Error(data.error);
@@ -734,12 +807,15 @@ function renderCard(e) {
 
   let html = `<div class="card" data-type="${e.type}">`;
   html += `<div class="ct"><span class="pp ${e.type}">:${e.port}</span><span class="cn" title="${name}">${name}</span><span class="sd ${dotClass}"></span></div>`;
+  const customDesc = getDescription(e);
   const desc = portDescription(e.port);
   const proc = !img && e.process ? e.process : '';
   const cmd = !img && e.command ? e.command : '';
-  const subtitle = img
-    ? img + (desc ? ' \u00B7 ' + desc : '')
-    : [proc, desc].filter(Boolean).join(' \u00B7 ');
+  const subtitle = customDesc
+    ? (img ? img + ' \u00B7 ' + customDesc : customDesc)
+    : img
+      ? img + (desc ? ' \u00B7 ' + desc : '')
+      : [proc, desc].filter(Boolean).join(' \u00B7 ');
   if (subtitle) html += `<div class="ci" title="${cmd || ''}">${subtitle}</div>`;
   if (cpuStr) html += `<div class="cbw"><div class="cb ${barClass}" style="width:${barWidth}%"></div></div>`;
   if (cpuStr || memStr) {
@@ -754,6 +830,7 @@ function renderCard(e) {
   }
   // Action buttons
   html += '<div class="card-actions">';
+  html += `<button class="action-btn" onclick="openEdit(${e.port})">Edit</button>`;
   if (e.url) html += `<a class="action-btn open-btn" href="${e.url}" target="_blank" onclick="event.stopPropagation()">Open</a>`;
   if (e.type === 'docker' && e.docker_container) {
     html += `<button class="action-btn log-btn" onclick="openLogs('${e.docker_container.replace(/'/g, "\\'")}')">Log</button>`;
@@ -781,6 +858,7 @@ function renderListRow(e) {
   else if (e.state === 'stopped') dotClass = 'stopped';
 
   let actions = '<span class="list-actions">';
+  actions += `<button class="action-btn" onclick="openEdit(${e.port})">Edit</button>`;
   if (e.url) actions += `<a class="action-btn open-btn" href="${e.url}" target="_blank" onclick="event.stopPropagation()">Open</a>`;
   if (e.type === 'docker' && e.docker_container) {
     actions += `<button class="action-btn log-btn" onclick="openLogs('${e.docker_container.replace(/'/g, "\\'")}')">Log</button>`;
@@ -790,7 +868,7 @@ function renderListRow(e) {
   return `<div class="list-row">` +
     `<span class="pp ${e.type}">:${e.port}</span>` +
     `<span class="lr-name"><span class="sd ${dotClass}"></span>${name}</span>` +
-    `<span class="lr-val lr-image">${img || e.process || portDescription(e.port) || '-'}</span>` +
+    `<span class="lr-val lr-image">${img || getDescription(e) || e.process || portDescription(e.port) || '-'}</span>` +
     `<span class="${cpuClass}">${cpuStr}</span>` +
     `<span class="lr-val">${memStr}</span>` +
     `<span class="lr-val">${e.uptime || '-'}</span>` +
@@ -891,6 +969,80 @@ async function fetchLogs() {
   }
 }
 
+// ── Edit ──
+let editPort = null;
+const ALL_CATS = [...CATEGORIES.map(c => c.key), 'System', 'Host', 'Other'];
+
+function openEdit(port) {
+  editPort = port;
+  const entry = allPorts.find(e => e.port === port);
+  const ov = config.overrides[String(port)] || {};
+  const defaultName = entry
+    ? (entry.docker_container || (entry.process || '').replace(/\(.*/, '').trim() || 'Port ' + port)
+    : 'Port ' + port;
+
+  document.getElementById('edit-title').textContent = `Modifier :${port} — ${defaultName}`;
+  document.getElementById('edit-name').value = ov.name || '';
+  document.getElementById('edit-name').placeholder = defaultName;
+  document.getElementById('edit-desc').value = ov.description || '';
+  document.getElementById('edit-saved').classList.remove('show');
+
+  // Populate category select
+  const sel = document.getElementById('edit-cat');
+  sel.innerHTML = '<option value="">Auto (par defaut)</option>';
+  for (const cat of ALL_CATS) {
+    const opt = document.createElement('option');
+    opt.value = cat;
+    opt.textContent = cat;
+    if (ov.category === cat) opt.selected = true;
+    sel.appendChild(opt);
+  }
+
+  document.getElementById('edit-overlay').classList.add('visible');
+}
+
+async function saveEdit() {
+  if (!editPort) return;
+  const name = document.getElementById('edit-name').value.trim();
+  const description = document.getElementById('edit-desc').value.trim();
+  const category = document.getElementById('edit-cat').value;
+
+  const body = { port: editPort };
+  if (name) body.name = name;
+  if (description) body.description = description;
+  if (category) body.category = category;
+
+  try {
+    await fetch('/api/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    await loadConfig();
+    render();
+    document.getElementById('edit-saved').classList.add('show');
+    setTimeout(() => document.getElementById('edit-saved').classList.remove('show'), 2000);
+  } catch (err) {
+    alert('Erreur: ' + err.message);
+  }
+}
+
+async function resetEdit() {
+  if (!editPort) return;
+  try {
+    await fetch('/api/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ port: editPort })
+    });
+    await loadConfig();
+    render();
+    document.getElementById('edit-overlay').classList.remove('visible');
+  } catch (err) {
+    alert('Erreur: ' + err.message);
+  }
+}
+
 // ── Events ──
 document.addEventListener('DOMContentLoaded', () => {
   fetchSonar();
@@ -973,6 +1125,17 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('logs-refresh').addEventListener('click', fetchLogs);
   document.getElementById('logs-tail').addEventListener('change', fetchLogs);
+
+  // Edit modal
+  const editOverlay = document.getElementById('edit-overlay');
+  document.getElementById('edit-close').addEventListener('click', () => {
+    editOverlay.classList.remove('visible');
+  });
+  editOverlay.addEventListener('click', (e) => {
+    if (e.target === editOverlay) editOverlay.classList.remove('visible');
+  });
+  document.getElementById('edit-save').addEventListener('click', saveEdit);
+  document.getElementById('edit-reset').addEventListener('click', resetEdit);
 
   // View mode toggle (cards/list)
   document.getElementById('view-cards').addEventListener('click', () => {

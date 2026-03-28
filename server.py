@@ -15,10 +15,23 @@ from http.server import HTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
 SONAR_CMD = os.environ.get("SONAR_CMD", "sonar")
+CONFIG_PATH = None  # set in main()
+
+
+def load_config():
+    if CONFIG_PATH and os.path.exists(CONFIG_PATH):
+        with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {"overrides": {}}
+
+
+def save_config(data):
+    with open(CONFIG_PATH, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
 
 
 class SonarHandler(SimpleHTTPRequestHandler):
-    """Serves static files from static/ and exposes two API endpoints."""
+    """Serves static files from static/ and exposes API endpoints."""
 
     def do_GET(self):
         parsed = urlparse(self.path)
@@ -44,11 +57,48 @@ class SonarHandler(SimpleHTTPRequestHandler):
             if not tail.isdigit():
                 tail = "200"
             self._docker_logs(container, tail)
+        elif parsed.path == "/api/config":
+            config = load_config()
+            self._json_response(200, json.dumps(config), raw=True)
         elif self.path == "/":
             self.path = "/index.html"
             super().do_GET()
         else:
             super().do_GET()
+
+    def do_POST(self):
+        parsed = urlparse(self.path)
+        if parsed.path == "/api/config":
+            try:
+                length = int(self.headers.get("Content-Length", 0))
+                body = self.rfile.read(length).decode("utf-8")
+                data = json.loads(body)
+                # Merge into existing config
+                config = load_config()
+                port_key = str(data.get("port", ""))
+                if not port_key:
+                    self._json_error(400, "Missing 'port' field")
+                    return
+                override = {}
+                if "name" in data:
+                    override["name"] = data["name"]
+                if "description" in data:
+                    override["description"] = data["description"]
+                if "category" in data:
+                    override["category"] = data["category"]
+                if override:
+                    config.setdefault("overrides", {})[port_key] = override
+                else:
+                    # Empty override = delete
+                    config.get("overrides", {}).pop(port_key, None)
+                save_config(config)
+                self._json_response(200, json.dumps({"ok": True}), raw=True)
+            except json.JSONDecodeError:
+                self._json_error(400, "Invalid JSON")
+            except Exception as e:
+                self._json_error(500, str(e))
+        else:
+            self.send_error(404)
 
     def _run_sonar(self, *args):
         cmd = [SONAR_CMD] + list(args)
@@ -114,8 +164,10 @@ class SonarHandler(SimpleHTTPRequestHandler):
 
 
 def main():
+    global CONFIG_PATH
     script_dir = os.path.dirname(os.path.abspath(__file__))
     static_dir = os.path.join(script_dir, "static")
+    CONFIG_PATH = os.path.join(script_dir, "config.json")
 
     parser = argparse.ArgumentParser(description="Sonar Viewer dashboard server")
     parser.add_argument(
