@@ -17,6 +17,11 @@ Visualize all open ports and running containers on your homelab server with a cl
 - **Auto-categorization** — containers are grouped by type (Media, Arr, Infra, Network, Security, etc.)
 - **Zero dependencies** — Python stdlib only, no `pip install` needed
 
+## Prerequisites
+
+1. **Install [sonar](https://github.com/raskrebs/sonar)** — follow the installation instructions on the repo. If you find it useful, consider giving it a star!
+2. **Python 3.7+**
+
 ## Quick start
 
 ```bash
@@ -35,7 +40,9 @@ python3 server.py --bind 127.0.0.1  # bind to localhost only
 SONAR_CMD=./sonar python3 server.py # custom sonar binary path
 ```
 
-## Requirements
+## Features
 
-- Python 3.7+
-- [sonar](https://github.com/raskrebs/sonar) installed on the same machine
+- **Docker logs** — view container logs directly from the dashboard
+- **Light/dark theme** — toggle with the sun/moon icon
+- **Cards or list view** — switch between grid and compact table layout
+- **Category grouping** — toggle on/off to group services by type
