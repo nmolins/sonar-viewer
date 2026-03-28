@@ -709,8 +709,12 @@ function renderCard(e) {
   let html = `<div class="card" data-type="${e.type}">`;
   html += `<div class="ct"><span class="pp ${e.type}">:${e.port}</span><span class="cn" title="${name}">${name}</span><span class="sd ${dotClass}"></span></div>`;
   const desc = portDescription(e.port);
-  if (img) html += `<div class="ci">${img}${desc ? ' \u00B7 ' + desc : ''}</div>`;
-  else if (desc) html += `<div class="ci">${desc}</div>`;
+  const proc = !img && e.process ? e.process : '';
+  const cmd = !img && e.command ? e.command : '';
+  const subtitle = img
+    ? img + (desc ? ' \u00B7 ' + desc : '')
+    : [proc, desc].filter(Boolean).join(' \u00B7 ');
+  if (subtitle) html += `<div class="ci" title="${cmd || ''}">${subtitle}</div>`;
   if (cpuStr) html += `<div class="cbw"><div class="cb ${barClass}" style="width:${barWidth}%"></div></div>`;
   if (cpuStr || memStr) {
     html += '<div class="cstats">';
@@ -760,7 +764,7 @@ function renderListRow(e) {
   return `<div class="list-row">` +
     `<span class="pp ${e.type}">:${e.port}</span>` +
     `<span class="lr-name"><span class="sd ${dotClass}"></span>${name}</span>` +
-    `<span class="lr-val lr-image">${img || portDescription(e.port) || '-'}</span>` +
+    `<span class="lr-val lr-image">${img || e.process || portDescription(e.port) || '-'}</span>` +
     `<span class="${cpuClass}">${cpuStr}</span>` +
     `<span class="lr-val">${memStr}</span>` +
     `<span class="lr-val">${e.uptime || '-'}</span>` +
